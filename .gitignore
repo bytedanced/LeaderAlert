@@ -22,3 +22,6 @@ dist/
 .trae/
 .vscode/
 .idea/
+
+# 日志
+*.log

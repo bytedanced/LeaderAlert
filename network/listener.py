@@ -3,7 +3,6 @@ import socket
 
 from PySide6.QtCore import QThread, Signal
 
-import config
 from network import protocol
 from network.protocol import AlertMsg, HeartbeatMsg
 
@@ -13,8 +12,9 @@ class ListenerThread(QThread):
     alert_received = Signal(object)      # AlertMsg
     bind_failed = Signal(str)            # 端口绑定失败（如本机多实例未复用）
 
-    def __init__(self, parent=None):
+    def __init__(self, port, parent=None):
         super().__init__(parent)
+        self._port = port
         self._stop = False
 
     def run(self):
@@ -23,7 +23,7 @@ class ListenerThread(QThread):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         try:
-            sock.bind(("", config.UDP_PORT))
+            sock.bind(("", self._port))
         except OSError as e:
             self.bind_failed.emit(str(e))
             sock.close()

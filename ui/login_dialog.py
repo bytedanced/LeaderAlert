@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
 class LoginDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("欢迎使用领导来了预警")
+        self.setWindowTitle("欢迎使用牛来了预警")
         self.setFixedWidth(380)
 
         layout = QVBoxLayout(self)
@@ -20,7 +20,7 @@ class LoginDialog(QDialog):
         title = QLabel("首次使用，请输入你的名字")
         title.setStyleSheet("font-size: 16px; font-weight: bold;")
 
-        note = QLabel("同事的通知列表里会显示这个名字；\n识别到领导时也会标注报警来源。")
+        note = QLabel("同事的通知列表里会显示这个名字；\n识别到牛时也会标注报警来源。")
         note.setStyleSheet("color: #94a3b8;")
         note.setWordWrap(True)
 

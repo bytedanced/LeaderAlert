@@ -1,4 +1,4 @@
-"""领导来了预警系统入口。"""
+"""牛来了预警系统入口。"""
 import argparse
 import sys
 
@@ -13,7 +13,7 @@ from ui.widgets import DARK_QSS, make_app_icon
 
 
 def main():
-    parser = argparse.ArgumentParser(description="领导来了预警系统")
+    parser = argparse.ArgumentParser(description="牛来了预警系统")
     parser.add_argument(
         "--data-dir",
         default=None,

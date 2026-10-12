@@ -35,12 +35,13 @@ class HeartbeatMsg:
 
 
 class AlertMsg:
-    """报警消息：识别到领导，由识别端广播。"""
+    """报警消息：识别到目标，由识别端广播。"""
 
-    def __init__(self, user, host, ts=None):
+    def __init__(self, user, host, ts=None, target=""):
         self.user = user
         self.host = host
         self.ts = ts if ts is not None else time.time()
+        self.target = target or ""
 
     def to_dict(self):
         return {
@@ -48,11 +49,12 @@ class AlertMsg:
             "user": self.user,
             "host": self.host,
             "ts": self.ts,
+            "target": self.target,
         }
 
     @staticmethod
     def from_dict(d):
-        return AlertMsg(d.get("user", ""), d.get("host", ""), d.get("ts"))
+        return AlertMsg(d.get("user", ""), d.get("host", ""), d.get("ts"), d.get("target", ""))
 
 
 def encode(msg) -> bytes:

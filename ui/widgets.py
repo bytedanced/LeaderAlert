@@ -1,41 +1,93 @@
-"""通用 UI 资源：深色主题样式表、应用图标、无按钮数字输入框。"""
-from PySide6.QtCore import Qt
+"""通用 UI 资源：深色主题样式表、应用图标、无按钮数字输入框、拖拽文件列表。"""
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
-from PySide6.QtWidgets import QAbstractSpinBox, QDoubleSpinBox, QSpinBox
+from PySide6.QtWidgets import QAbstractSpinBox, QDoubleSpinBox, QListWidget, QSpinBox
 
-# 深色主题（紫色 accent）
+# 深色主题（紫 accent，卡片式布局）
 DARK_QSS = """
-* { font-family: 'Microsoft YaHei UI'; font-size: 12px; color: #e2e8f0; }
-QMainWindow, QDialog { background: #0f172a; }
-QToolBar { background: #0b1220; border: none; border-bottom: 1px solid #1e293b; spacing: 8px; padding: 6px; }
-QPushButton { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 6px 16px; color: #e2e8f0; }
+* { font-family: 'Microsoft YaHei UI'; font-size: 13px; color: #e2e8f0; }
+QMainWindow, QDialog { background: #0b1120; }
+
+/* ---------- 侧边导航 ---------- */
+QWidget#sideNav { background: #0f172a; border-right: 1px solid #1e293b; }
+QLabel#navLogo { font-size: 16px; font-weight: bold; color: #a78bfa; padding: 18px 16px 4px; }
+QLabel#navIdentity { color: #64748b; font-size: 11px; padding: 0 16px 14px; }
+QPushButton[navItem="true"] {
+    background: transparent; border: none; border-left: 3px solid transparent;
+    border-radius: 0px; text-align: left; padding: 11px 16px; color: #94a3b8;
+}
+QPushButton[navItem="true"]:hover { background: #1e293b; color: #e2e8f0; }
+QPushButton[navItem="true"]:checked {
+    background: #1e1b33; color: #a78bfa; border-left: 3px solid #7c3aed; font-weight: bold;
+}
+
+/* ---------- 页面与卡片 ---------- */
+QWidget#page { background: #0b1120; }
+QLabel#pageTitle { font-size: 17px; font-weight: bold; padding: 2px 0; }
+QLabel#pageHint { color: #64748b; }
+QFrame#card {
+    background: #111a2e; border: 1px solid #1e293b; border-radius: 12px;
+}
+QFrame#card:hover { border-color: #334155; }
+QLabel#cardTitle { color: #94a3b8; font-size: 12px; }
+QLabel#statNum { font-size: 26px; font-weight: bold; color: #e2e8f0; }
+QLabel#statOk { color: #34d399; }
+QLabel#statWarn { color: #fbbf24; }
+QLabel#statErr { color: #f87171; }
+
+/* ---------- 按钮 ---------- */
+QPushButton {
+    background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+    padding: 8px 18px; color: #e2e8f0;
+}
 QPushButton:hover { background: #334155; border-color: #475569; }
 QPushButton:pressed { background: #475569; }
-QPushButton:checked { background: #7c3aed; border-color: #7c3aed; color: #ffffff; }
-QPushButton:checked:hover { background: #8b5cf6; }
 QPushButton:disabled { color: #64748b; background: #131c2e; }
-QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
-    background: #1e293b; border: 1px solid #334155; border-radius: 6px;
-    padding: 4px 8px; color: #e2e8f0; selection-background-color: #7c3aed;
+QPushButton[primary="true"] {
+    background: #7c3aed; border-color: #7c3aed; color: #ffffff; font-weight: bold;
 }
-QComboBox::drop-down { border: none; width: 22px; }
+QPushButton[primary="true"]:hover { background: #8b5cf6; border-color: #8b5cf6; }
+QPushButton[primary="true"]:checked { background: #dc2626; border-color: #dc2626; }
+QPushButton[primary="true"]:checked:hover { background: #ef4444; }
+QPushButton[danger="true"] { border-color: #7f1d1d; color: #f87171; }
+QPushButton[danger="true"]:hover { background: #7f1d1d; color: #ffffff; }
+QPushButton[flat="true"] { background: transparent; border: none; color: #94a3b8; padding: 4px 10px; }
+QPushButton[flat="true"]:hover { color: #e2e8f0; background: #1e293b; }
+
+/* ---------- 输入 ---------- */
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    padding: 7px 10px; color: #e2e8f0; selection-background-color: #7c3aed;
+}
+QLineEdit:focus, QSpinBox:focus, QComboBox:focus { border-color: #7c3aed; }
+QComboBox::drop-down { border: none; width: 24px; }
 QComboBox QAbstractItemView { background: #1e293b; border: 1px solid #334155; selection-background-color: #7c3aed; }
-QTableWidget { background: #111c33; border: 1px solid #1e293b; gridline-color: #1e293b; alternate-background-color: #16213a; }
-QTableWidget::item { padding: 4px; }
+QCheckBox { spacing: 8px; }
+
+/* ---------- 表格 ---------- */
+QTableWidget { background: #111a2e; border: 1px solid #1e293b; border-radius: 10px; gridline-color: #1e293b; alternate-background-color: #16213a; }
+QTableWidget::item { padding: 6px; border: none; }
 QTableWidget::item:selected { background: #7c3aed; color: #ffffff; }
-QHeaderView::section { background: #1e293b; border: none; border-right: 1px solid #0f172a; padding: 6px; color: #94a3b8; }
-QTabWidget::pane { border: 1px solid #1e293b; border-radius: 6px; top: -1px; }
-QTabBar::tab { background: #1e293b; padding: 8px 20px; margin-right: 2px; border-top-left-radius: 6px; border-top-right-radius: 6px; color: #94a3b8; }
-QTabBar::tab:selected { background: #7c3aed; color: #ffffff; }
-QGroupBox { border: 1px solid #1e293b; border-radius: 8px; margin-top: 14px; padding-top: 8px; }
-QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 4px; color: #94a3b8; }
-QStatusBar { background: #0b1220; border-top: 1px solid #1e293b; color: #94a3b8; }
-QStatusBar QLabel { color: #94a3b8; padding: 0 8px; }
-QToolTip { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
-QListWidget { background: #111c33; border: 1px solid #1e293b; border-radius: 6px; }
-QListWidget::item { padding: 6px 8px; }
+QHeaderView::section { background: #0f172a; border: none; border-bottom: 1px solid #1e293b; padding: 8px; color: #94a3b8; }
+
+/* ---------- 列表 / 滚动 ---------- */
+QListWidget { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; }
+QListWidget::item { padding: 6px 8px; border-radius: 6px; }
 QListWidget::item:selected { background: #7c3aed; color: #ffffff; }
-QLabel#previewLabel { background: #0b1220; border: 1px solid #1e293b; border-radius: 6px; }
+QScrollArea { border: none; background: transparent; }
+QScrollBar:vertical { background: transparent; width: 10px; margin: 2px; }
+QScrollBar::handle:vertical { background: #334155; border-radius: 5px; min-height: 30px; }
+QScrollBar::handle:vertical:hover { background: #475569; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+
+/* ---------- 其他 ---------- */
+QGroupBox { border: 1px solid #1e293b; border-radius: 12px; margin-top: 16px; padding-top: 10px; background: #111a2e; }
+QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color: #94a3b8; }
+QStatusBar { background: #0f172a; border-top: 1px solid #1e293b; color: #94a3b8; }
+QStatusBar QLabel { color: #94a3b8; padding: 0 10px; }
+QToolTip { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
+QLabel#previewLabel { background: #050a16; border: 1px solid #1e293b; border-radius: 12px; color: #475569; }
+QFrame#divider { background: #1e293b; max-height: 1px; }
 """
 
 
@@ -71,3 +123,38 @@ def make_spin(parent, minimum, maximum, value, decimals=0, step=1):
     spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.NoButtons)
     spin.setMinimumWidth(90)
     return spin
+
+
+class DropFileList(QListWidget):
+    """支持把系统文件拖入的列表控件，拖入后发出 files_dropped(路径列表)。"""
+
+    files_dropped = Signal(list)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.setDragDropMode(QListWidget.DragDropMode.DropOnly)
+
+    def _accepts(self, event):
+        return event.mimeData().hasUrls()
+
+    def dragEnterEvent(self, event):
+        if self._accepts(event):
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event):
+        if self._accepts(event):
+            event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event):
+        if not self._accepts(event):
+            super().dropEvent(event)
+            return
+        files = [u.toLocalFile() for u in event.mimeData().urls() if u.isLocalFile()]
+        event.acceptProposedAction()
+        if files:
+            self.files_dropped.emit(files)

@@ -22,12 +22,14 @@ class RecognizerError(Exception):
 
 
 class FrameResult:
-    """单帧识别结果。boxes 为人脸框 (x1, y1, x2, y2) 列表，hit 为本帧是否命中领导，confirmed 为滑窗确认。"""
+    """单帧识别结果。boxes 为人脸框 (x1, y1, x2, y2) 列表，hit 为本帧是否命中目标，
+    confirmed 为滑窗确认，target 为确认时命中的目标名（未确认为 None）。"""
 
-    def __init__(self, boxes, hit, confirmed):
+    def __init__(self, boxes, hit, confirmed, target=None):
         self.boxes = boxes
         self.hit = hit
         self.confirmed = confirmed
+        self.target = target
 
 
 class InsightFaceEngine:
@@ -146,7 +148,8 @@ class Recognizer:
 
         self.engine_name = self._engine.name()
         self._window = deque(maxlen=self._confirm_window)
-        self._embeddings = []
+        self._embeddings = []  # [(特征向量, 目标名), ...]
+        self._last_hit_target = None
         self.reload_leader_embeddings()
 
     # ---------- 参数与特征库 ----------
@@ -170,22 +173,31 @@ class Recognizer:
         with self._lock:
             faces = self._engine.detect_and_embed(frame)
             boxes = [f[0] for f in faces]
-            hit = False
+            hit, hit_target = False, None
             for _box, emb in faces:
-                if self._best_similarity(emb) >= self._threshold:
-                    hit = True
+                name, score = self._best_match(emb)
+                if score >= self._threshold:
+                    hit, hit_target = True, name
                     break
+            if hit:
+                self._last_hit_target = hit_target
             self._window.append(hit)
             confirmed = sum(self._window) >= self._confirm_hits
             if confirmed:
                 self._window.clear()  # 确认后清空窗口，冷却逻辑由上层负责
-            return FrameResult(boxes, hit, confirmed)
+                return FrameResult(boxes, hit, True, self._last_hit_target)
+            return FrameResult(boxes, hit, False)
 
-    def _best_similarity(self, emb) -> float:
-        """与领导特征库的最大余弦相似度。"""
+    def _best_match(self, emb):
+        """返回特征库中最高相似度的 (目标名, 相似度)；库为空返回 (None, 0)。"""
         if not self._embeddings:
-            return 0.0
-        return max(float(np.dot(emb, ref)) for ref in self._embeddings)
+            return None, 0.0
+        best_name, best = None, 0.0
+        for ref, name in self._embeddings:
+            score = float(np.dot(emb, ref))
+            if score > best:
+                best, best_name = score, name
+        return best_name, best
 
     # ---------- 录入 ----------
     def enroll(self, image_path: str):

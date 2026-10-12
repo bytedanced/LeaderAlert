@@ -71,7 +71,7 @@ class AppContext(QObject):
 
         # 托盘图标
         self.tray = QSystemTrayIcon(make_app_icon(), self)
-        self.tray.setToolTip(f"{config.APP_NAME}：{self.user}@{self.host}")
+        self.tray.setToolTip(f"牛来了预警 v{config.APP_VERSION}：{self.user}@{self.host}")
         self.tray.show()
 
         # 通知器
@@ -82,13 +82,45 @@ class AppContext(QObject):
         self.detector = DetectorService(self)
 
         # 网络
+        self.broadcaster = None
+        self.listener = None
+        self._start_network()
+
+    # ---------- 网络参数 ----------
+    def udp_port(self) -> int:
+        return self.db.get_int("udp_port", config.UDP_PORT)
+
+    def broadcast_addrs(self):
+        """广播地址列表（设置中逗号分隔多个）。"""
+        raw = self.db.get_str("broadcast_addrs", config.BROADCAST_ADDR) or config.BROADCAST_ADDR
+        addrs = [a.strip() for a in raw.split(",") if a.strip()]
+        return addrs or [config.BROADCAST_ADDR]
+
+    def heartbeat_interval(self) -> int:
+        return max(1, self.db.get_int("heartbeat_interval", config.HEARTBEAT_INTERVAL))
+
+    def peer_timeout(self) -> int:
+        return max(5, self.db.get_int("peer_timeout", config.PEER_TIMEOUT))
+
+    def _start_network(self):
         self.broadcaster = Broadcaster(self, self)
-        self.listener = ListenerThread(self)
+        self.listener = ListenerThread(self.udp_port(), self)
         self.listener.heartbeat_received.connect(self._on_heartbeat)
         self.listener.alert_received.connect(self._on_remote_alert)
         self.listener.bind_failed.connect(self._on_bind_failed)
         self.broadcaster.start()
         self.listener.start()
+
+    def restart_network(self):
+        """网络参数变更后重启收发模块。"""
+        if self.listener is not None:
+            self.listener.stop()
+        if self.broadcaster is not None:
+            self.broadcaster.stop()
+        self.peers.clear()
+        self.peers_changed.emit()
+        self.udp_ok = True
+        self._start_network()
 
     # ---------- 状态 ----------
     def role(self) -> str:
@@ -112,7 +144,8 @@ class AppContext(QObject):
     def prune_peers(self):
         """清理超时未心跳的同事。"""
         now = time.time()
-        stale = [k for k, v in self.peers.items() if now - v.last_seen > config.PEER_TIMEOUT]
+        timeout = self.peer_timeout()
+        stale = [k for k, v in self.peers.items() if now - v.last_seen > timeout]
         if stale:
             for k in stale:
                 self.peers.pop(k)
@@ -120,14 +153,14 @@ class AppContext(QObject):
 
     # ---------- 报警处理 ----------
     def _on_remote_alert(self, msg):
-        self.handle_alert(msg.user, msg.host, msg.ts, frame=None)
+        self.handle_alert(msg.user, msg.host, msg.ts, frame=None, target=msg.target)
 
-    def submit_local_alert(self, frame):
-        """本机识别确认后的报警：广播 + 本机通知。"""
-        self.broadcaster.send_alert()
-        self.handle_alert(self.user, self.host, time.time(), frame=frame)
+    def submit_local_alert(self, frame, target=""):
+        """本机识别确认后的报警：广播 + 本机通知。target 为命中的目标名。"""
+        self.broadcaster.send_alert(target)
+        self.handle_alert(self.user, self.host, time.time(), frame=frame, target=target)
 
-    def handle_alert(self, user, host, ts, frame=None):
+    def handle_alert(self, user, host, ts, frame=None, target=None):
         """报警统一入口：全局冷却去重 → 抓拍 → 落库 → 通知。"""
         cooldown = self.db.get_int("cooldown_seconds", config.COOLDOWN_SECONDS)
         if time.time() - self._last_alert_ts < cooldown:
@@ -141,8 +174,8 @@ class AppContext(QObject):
                 datetime.now().strftime("%Y%m%d_%H%M%S"), self._alert_seq
             )
             cv2.imwrite(os.path.join(paths.snapshots_dir(), snapshot), frame)
-        self.db.add_alert(user, host, ts, snapshot)
-        self.notifier.show_alert(user, host, ts)
+        self.db.add_alert(user, host, ts, snapshot, target)
+        self.notifier.show_alert(user, host, ts, target)
         self.alerts_changed.emit()
 
     # ---------- 识别器 ----------
@@ -165,6 +198,7 @@ class AppContext(QObject):
                 self.db.get_int("confirm_window", config.CONFIRM_WINDOW),
                 self.db.get_int("confirm_hits", config.CONFIRM_HITS),
             )
+            self._recognizer.reload_leader_embeddings()
         self.notifier.set_sound_file(self.db.get_str("sound_file"))
 
     # ---------- 网络 ----------
@@ -172,7 +206,7 @@ class AppContext(QObject):
         self.udp_ok = False
         self.tray.showMessage(
             "网络提示",
-            f"UDP 端口 {config.UDP_PORT} 绑定失败，无法接收广播：{message}",
+            f"UDP 端口 {self.udp_port()} 绑定失败，无法接收广播：{message}",
             QSystemTrayIcon.MessageIcon.Warning,
             5000,
         )

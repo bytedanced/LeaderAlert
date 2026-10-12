@@ -33,12 +33,15 @@ class Notifier(QObject):
     def sound_file(self):
         return self._sound_file
 
-    def show_alert(self, user, host, ts):
-        """弹出「领导来了」通知，标注识别来源。"""
+    def show_alert(self, user, host, ts, target=None):
+        """弹出「牛来了」通知，标注是谁来了和识别来源。"""
         t = datetime.fromtimestamp(ts).strftime("%H:%M:%S")
+        title = f"牛来了：{target}" if target else "牛来了！"
+        body = f"【{target}】由 {user}（{host}）的摄像头识别到 {t}" if target else \
+            f"由 {user}（{host}）的摄像头识别到 {t}"
         self._tray.showMessage(
-            "领导来了！",
-            f"由 {user}（{host}）的摄像头识别到 {t}",
+            title,
+            body,
             QSystemTrayIcon.MessageIcon.Warning,
             5000,
         )

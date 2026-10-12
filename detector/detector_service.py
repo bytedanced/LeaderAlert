@@ -13,7 +13,7 @@ from detector.camera import CameraThread
 
 class ProcessingThread(QThread):
     preview_frame = Signal(object, object)  # 已画框的帧, 人脸框列表
-    alert_confirmed = Signal(object)         # 确认报警时的原始帧（用于抓拍）
+    alert_confirmed = Signal(object, str)   # 确认报警时的原始帧（用于抓拍）, 命中目标名
 
     def __init__(self, recognizer, frame_queue, parent=None):
         super().__init__(parent)
@@ -38,7 +38,7 @@ class ProcessingThread(QThread):
                 cv2.rectangle(drawn, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
             self.preview_frame.emit(drawn, result.boxes)
             if result.confirmed:
-                self.alert_confirmed.emit(frame)
+                self.alert_confirmed.emit(frame, result.target or "")
 
     def stop(self):
         self._stop = True
@@ -49,7 +49,7 @@ class DetectorService(QObject):
     """识别服务门面：start/stop 摄像头与识别线程。"""
 
     preview_frame = Signal(object, object)
-    alert_confirmed = Signal(object)
+    alert_confirmed = Signal(object, str)
     error_occurred = Signal(str)
     state_changed = Signal(bool)  # 运行状态
 
