@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+
+# uv / 虚拟环境
+.venv/
+
+# 运行时数据（数据库/抓拍/照片，含个人身份信息）
+data/
+data_a/
+data_b/
+
+# 模型文件（build.bat 会从 ~/.insightface 缓存复制）
+assets/models/
+
+# PyInstaller 产物
+build/
+dist/
+*.spec
+
+# IDE
+.trae/
+.vscode/
+.idea/

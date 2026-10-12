@@ -1,0 +1,17 @@
+[project]
+name = "leader-alert"
+version = "0.1.0"
+description = "领导来了预警系统：局域网人脸识别 + UDP 广播通知"
+requires-python = ">=3.9"
+dependencies = [
+    "PySide6~=6.6.3",
+    "numpy<2",
+    "opencv-python",
+    "onnxruntime==1.20.1",
+    "insightface",
+]
+
+[dependency-groups]
+dev = [
+    "pyinstaller",
+]
