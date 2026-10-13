@@ -40,13 +40,16 @@ class SettingsPage(Page):
             self._camera.addItem(f"摄像头 {i}", i)
         self._camera.setCurrentIndex(db.get_int("camera_index", 0))
         self._threshold = make_spin(self, 20, 90, round(db.get_float("sim_threshold", config.SIM_THRESHOLD) * 100), decimals=2, step=1)
+        self._threshold.setSuffix("%")
         self._confirm_window = make_spin(self, 3, 30, db.get_int("confirm_window", config.CONFIRM_WINDOW))
         self._confirm_hits = make_spin(self, 1, 30, db.get_int("confirm_hits", config.CONFIRM_HITS))
+        self._camera_fps = make_spin(self, 1, 15, db.get_int("camera_fps", config.CAMERA_FPS))
         self._cooldown = make_spin(self, 10, 1000, db.get_int("cooldown_seconds", config.COOLDOWN_SECONDS))
         form.addRow("摄像头", self._camera)
-        form.addRow("相似度阈值（0.2~0.9，越大越严格）", self._threshold)
+        form.addRow("相似度阈值（20%~90%，越大越严格）", self._threshold)
         form.addRow("确认窗口（帧）", self._confirm_window)
         form.addRow("窗口内命中帧数", self._confirm_hits)
+        form.addRow("检测帧率（FPS，越小越省 CPU）", self._camera_fps)
         form.addRow("报警冷却（秒）", self._cooldown)
         self.body().addWidget(detect_group)
 
@@ -171,6 +174,7 @@ class SettingsPage(Page):
             QMessageBox.warning(self, "参数有误", "广播地址列表不能为空，请至少添加一个")
             return
         old_camera = self.ctx.db.get_int("camera_index", 0)
+        old_fps = self.ctx.db.get_int("camera_fps", config.CAMERA_FPS)
         old_net = (
             self.ctx.db.get_int("udp_port", config.UDP_PORT),
             self.ctx.db.get_str("broadcast_addrs", config.BROADCAST_ADDR),
@@ -181,6 +185,7 @@ class SettingsPage(Page):
         db.set_setting("sim_threshold", self._threshold.value() / 100)
         db.set_setting("confirm_window", window)
         db.set_setting("confirm_hits", hits)
+        db.set_setting("camera_fps", self._camera_fps.value())
         db.set_setting("cooldown_seconds", self._cooldown.value())
         db.set_setting("sound_file", self._sound_edit.text().strip())
         db.set_setting("udp_port", self._udp_port.value())
@@ -195,5 +200,5 @@ class SettingsPage(Page):
         if new_net != old_net:
             self.ctx.restart_network()
         if self._on_saved:
-            self._on_saved(old_camera)
+            self._on_saved(old_camera, old_fps)
         QMessageBox.information(self, "已保存", "设置已保存并生效")

@@ -4,6 +4,7 @@ from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QMessageBox, QPushButton
 
 from detector.recognizer import RecognizerError
+import config
 from ui.pages.base import Card, Page, StatCard
 
 
@@ -90,11 +91,16 @@ class DashboardPage(Page):
             QMessageBox.critical(self, "识别引擎不可用", str(e))
             self._btn_toggle.setChecked(False)
             return
-        self.ctx.detector.start(db.get_int("camera_index", 0), recognizer)
+        self.ctx.detector.start(db.get_int("camera_index", 0), recognizer,
+                                db.get_int("camera_fps", config.CAMERA_FPS))
 
-    def restart_if_camera_changed(self, old_camera):
-        """设置页改了摄像头后，运行中则重启识别。"""
-        if self.ctx.detector.running and self.ctx.db.get_int("camera_index", 0) != old_camera:
+    def restart_if_camera_changed(self, old_camera, old_fps=None):
+        """设置页改了摄像头或检测帧率后，运行中则重启识别。"""
+        db = self.ctx.db
+        if self.ctx.detector.running and (
+            db.get_int("camera_index", 0) != old_camera
+            or db.get_int("camera_fps", config.CAMERA_FPS) != old_fps
+        ):
             self.ctx.detector.stop()
             self._start()
 

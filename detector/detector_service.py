@@ -60,14 +60,14 @@ class DetectorService(QObject):
         self._processing = None
         self._queue = None
 
-    def start(self, camera_index, recognizer):
+    def start(self, camera_index, recognizer, fps=None):
         if self.running:
             self.stop()
         self._queue = queue.Queue(maxsize=1)  # 处理不过来时丢帧，保持实时性
         self._processing = ProcessingThread(recognizer, self._queue)
         self._processing.preview_frame.connect(self.preview_frame)
         self._processing.alert_confirmed.connect(self.alert_confirmed)
-        self._camera = CameraThread(camera_index)
+        self._camera = CameraThread(camera_index, fps=fps)
         self._camera.frame_ready.connect(self._enqueue_frame)
         self._camera.error_occurred.connect(self._on_camera_error)
         self._processing.start()

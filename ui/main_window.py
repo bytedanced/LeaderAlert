@@ -137,8 +137,8 @@ class MainWindow(QMainWindow):
         self.activateWindow()
 
     # ---------- 事件 ----------
-    def _on_settings_saved(self, old_camera):
-        self._dashboard.restart_if_camera_changed(old_camera)
+    def _on_settings_saved(self, old_camera, old_fps=None):
+        self._dashboard.restart_if_camera_changed(old_camera, old_fps)
         self._dashboard.refresh_stats()
 
     def _on_alerts_changed(self):

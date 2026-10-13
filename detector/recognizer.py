@@ -8,6 +8,7 @@
 """
 import os
 import threading
+import time
 from collections import deque
 
 import cv2
@@ -150,6 +151,12 @@ class Recognizer:
         self._window = deque(maxlen=self._confirm_window)
         self._embeddings = []  # [(特征向量, 目标名), ...]
         self._last_hit_target = None
+
+        # 运动门控状态
+        self._prev_thumb = None       # 上一帧缩略灰度图
+        self._last_motion = 0.0       # 最近一次检测到运动的时刻
+        self._last_hit_at = 0.0       # 最近一次命中目标的时刻
+        self._last_detect = 0.0       # 最近一次全量检测的时刻
         self.reload_leader_embeddings()
 
     # ---------- 参数与特征库 ----------
@@ -169,9 +176,14 @@ class Recognizer:
 
     # ---------- 识别 ----------
     def process(self, frame) -> FrameResult:
-        """处理一帧：检测 + 比对 + 滑窗确认。"""
+        """处理一帧：运动门控 + 检测 + 比对 + 滑窗确认。"""
         with self._lock:
+            now = time.monotonic()
+            if not self._motion_detected(frame, now) and self._should_skip(now):
+                return FrameResult([], False, False)
+
             faces = self._engine.detect_and_embed(frame)
+            self._last_detect = now
             boxes = [f[0] for f in faces]
             hit, hit_target = False, None
             for _box, emb in faces:
@@ -181,12 +193,38 @@ class Recognizer:
                     break
             if hit:
                 self._last_hit_target = hit_target
+                self._last_hit_at = now
             self._window.append(hit)
             confirmed = sum(self._window) >= self._confirm_hits
             if confirmed:
                 self._window.clear()  # 确认后清空窗口，冷却逻辑由上层负责
                 return FrameResult(boxes, hit, True, self._last_hit_target)
             return FrameResult(boxes, hit, False)
+
+    def _motion_detected(self, frame, now: float) -> bool:
+        """缩略图帧差判断画面是否运动；同时维护运动时刻。"""
+        thumb = cv2.resize(frame, (80, 60))
+        thumb = cv2.cvtColor(thumb, cv2.COLOR_BGR2GRAY)
+        thumb = cv2.GaussianBlur(thumb, (5, 5), 0)
+        moved = False
+        if self._prev_thumb is not None:
+            diff = cv2.absdiff(thumb, self._prev_thumb)
+            # 变化像素数超过 MOTION_MIN_PIXELS（约 2%）即认为运动
+            moved = cv2.countNonZero(
+                cv2.threshold(diff, 15, 255, cv2.THRESH_BINARY)[1]
+            ) >= config.MOTION_MIN_PIXELS
+        self._prev_thumb = thumb
+        if moved:
+            self._last_motion = now
+        return moved
+
+    def _should_skip(self, now: float) -> bool:
+        """画面静止且距上次命中/全量检测较近时，跳过本帧检测。"""
+        idle = now - self._last_motion > config.MOTION_IDLE_AFTER
+        no_recent_hit = now - self._last_hit_at > config.MOTION_IDLE_AFTER
+        detected_recently = now - self._last_detect < config.MOTION_FORCE_INTERVAL
+        # 首帧（_last_detect=0）必然全量检测；静止期间每 MOTION_FORCE_INTERVAL 秒兜底一次
+        return idle and no_recent_hit and detected_recently
 
     def _best_match(self, emb):
         """返回特征库中最高相似度的 (目标名, 相似度)；库为空返回 (None, 0)。"""

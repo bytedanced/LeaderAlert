@@ -7,10 +7,15 @@ PEER_TIMEOUT = 60             # 离线判定默认值（秒，可在设置中修
 
 SIM_THRESHOLD = 0.45          # 人脸相似度阈值（余弦相似度，越大越严格）
 CONFIRM_WINDOW = 5            # 滑动窗口帧数
-CONFIRM_HITS = 3              # 窗口内命中多少帧才确认报警
-CAMERA_FPS = 10               # 摄像头检测帧率上限（降低 CPU 占用）
+CONFIRM_HITS = 3             # 窗口内命中多少帧才确认报警
+CAMERA_FPS = 8                # 摄像头检测帧率上限（降低 CPU 占用）
 COOLDOWN_SECONDS = 300        # 全局报警冷却时长（秒），默认 5 分钟
 DET_SIZE = (320, 320)         # 人脸检测输入尺寸
 
+MOTION_GATE = True            # 运动门控：画面静止时跳过人脸检测（省 CPU）
+MOTION_IDLE_AFTER = 2.0       # 连续无运动超过该秒数视为静止
+MOTION_FORCE_INTERVAL = 10.0  # 静止期间强制全量检测的安全间隔（秒）
+MOTION_MIN_PIXELS = 100       # 缩略图帧差判定运动的像素数阈值（80×60 共 4800 像素，约 2%）
+
 APP_NAME = "LeaderAlert"      # 应用名（同时用于注册表自启动项名称）
-APP_VERSION = "0.2.0"         # 版本号（与 pyproject.toml 保持一致）
+APP_VERSION = "0.3.0"         # 版本号（与 pyproject.toml 保持一致）
