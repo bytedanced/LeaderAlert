@@ -14,6 +14,7 @@ from detector.detector_service import DetectorService
 from detector.recognizer import Recognizer, RecognizerError
 from network.broadcaster import Broadcaster
 from network.listener import ListenerThread
+from network.sync_server import SyncServerThread
 from notify.notifier import Notifier
 from storage import paths
 from ui.widgets import make_app_icon
@@ -22,11 +23,13 @@ from ui.widgets import make_app_icon
 class PeerInfo:
     """在线同事信息。"""
 
-    def __init__(self, user, host, role, last_seen):
+    def __init__(self, user, host, role, last_seen, ip="", sync_port=0):
         self.user = user
         self.host = host
         self.role = role
         self.last_seen = last_seen
+        self.ip = ip
+        self.sync_port = sync_port
 
 
 def set_autostart(enabled: bool) -> bool:
@@ -84,11 +87,16 @@ class AppContext(QObject):
         # 网络
         self.broadcaster = None
         self.listener = None
+        self.sync_server = None
         self._start_network()
 
     # ---------- 网络参数 ----------
     def udp_port(self) -> int:
         return self.db.get_int("udp_port", config.UDP_PORT)
+
+    def sync_port(self) -> int:
+        """TCP 数据同步端口（默认 UDP 端口 + 1）。"""
+        return self.db.get_int("sync_port", self.udp_port() + 1)
 
     def broadcast_addrs(self):
         """广播地址列表（设置中逗号分隔多个）。"""
@@ -110,6 +118,8 @@ class AppContext(QObject):
         self.listener.bind_failed.connect(self._on_bind_failed)
         self.broadcaster.start()
         self.listener.start()
+        self.sync_server = SyncServerThread(self, self.sync_port(), self)
+        self.sync_server.start()
 
     def restart_network(self):
         """网络参数变更后重启收发模块。"""
@@ -117,6 +127,8 @@ class AppContext(QObject):
             self.listener.stop()
         if self.broadcaster is not None:
             self.broadcaster.stop()
+        if self.sync_server is not None:
+            self.sync_server.stop()
         self.peers.clear()
         self.peers_changed.emit()
         self.udp_ok = True
@@ -134,11 +146,14 @@ class AppContext(QObject):
         return max(0, int(left))
 
     # ---------- 在线列表 ----------
-    def _on_heartbeat(self, msg):
+    def _on_heartbeat(self, msg, addr):
         key = f"{msg.user}@{msg.host}"
         if key == f"{self.user}@{self.host}":
             return  # 忽略自己
-        self.peers[key] = PeerInfo(msg.user, msg.host, msg.role, time.time())
+        self.peers[key] = PeerInfo(
+            msg.user, msg.host, msg.role, time.time(),
+            ip=addr[0], sync_port=msg.sync_port,
+        )
         self.peers_changed.emit()
 
     def prune_peers(self):
@@ -214,6 +229,10 @@ class AppContext(QObject):
     def shutdown(self):
         """退出前清理。"""
         self.detector.stop()
-        self.listener.stop()
-        self.broadcaster.stop()
+        if self.sync_server is not None:
+            self.sync_server.stop()
+        if self.listener is not None:
+            self.listener.stop()
+        if self.broadcaster is not None:
+            self.broadcaster.stop()
         self.tray.hide()

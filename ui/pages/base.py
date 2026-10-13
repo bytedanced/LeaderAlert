@@ -1,10 +1,10 @@
 """页面基类与公共组件：页面标题、统计卡、卡片容器。"""
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QScrollArea, QVBoxLayout, QWidget
 
 
 class Page(QWidget):
-    """内嵌页面基类：统一标题区 + 提示语。"""
+    """内嵌页面基类：统一标题区 + 提示语，内容区放入滚动容器以免撑住窗口最小尺寸。"""
 
     def __init__(self, ctx, title, hint="", parent=None):
         super().__init__(parent)
@@ -29,8 +29,18 @@ class Page(QWidget):
         line.setObjectName("divider")
         self._root.addWidget(line)
 
+        self._scroll = QScrollArea()
+        self._scroll.setWidgetResizable(True)
+        self._body = QWidget()
+        self._body.setObjectName("pageBody")
+        self._body_layout = QVBoxLayout(self._body)
+        self._body_layout.setContentsMargins(0, 0, 0, 0)
+        self._body_layout.setSpacing(14)
+        self._scroll.setWidget(self._body)
+        self._root.addWidget(self._scroll, 1)
+
     def body(self) -> QVBoxLayout:
-        return self._root
+        return self._body_layout
 
 
 class Card(QFrame):

@@ -23,6 +23,9 @@ QPushButton[navItem="true"]:checked {
 
 /* ---------- 页面与卡片 ---------- */
 QWidget#page { background: #0b1120; }
+QWidget#pageBody { background: #0b1120; }
+QScrollArea { border: none; background: #0b1120; }
+QScrollArea > QWidget > QWidget { background: #0b1120; }
 QLabel#pageTitle { font-size: 17px; font-weight: bold; padding: 2px 0; }
 QLabel#pageHint { color: #64748b; }
 QFrame#card {
@@ -74,11 +77,14 @@ QHeaderView::section { background: #0f172a; border: none; border-bottom: 1px sol
 QListWidget { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; }
 QListWidget::item { padding: 6px 8px; border-radius: 6px; }
 QListWidget::item:selected { background: #7c3aed; color: #ffffff; }
-QScrollArea { border: none; background: transparent; }
 QScrollBar:vertical { background: transparent; width: 10px; margin: 2px; }
 QScrollBar::handle:vertical { background: #334155; border-radius: 5px; min-height: 30px; }
 QScrollBar::handle:vertical:hover { background: #475569; }
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QScrollBar:horizontal { background: transparent; height: 10px; margin: 2px; }
+QScrollBar::handle:horizontal { background: #334155; border-radius: 5px; min-width: 30px; }
+QScrollBar::handle:horizontal:hover { background: #475569; }
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
 
 /* ---------- 其他 ---------- */
 QGroupBox { border: 1px solid #1e293b; border-radius: 12px; margin-top: 16px; padding-top: 10px; background: #111a2e; }
@@ -86,25 +92,67 @@ QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color:
 QStatusBar { background: #0f172a; border-top: 1px solid #1e293b; color: #94a3b8; }
 QStatusBar QLabel { color: #94a3b8; padding: 0 10px; }
 QToolTip { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
+QMenu {
+    background: #1e293b; color: #e2e8f0; border: 1px solid #334155;
+    border-radius: 8px; padding: 6px;
+}
+QMenu::item { padding: 7px 24px 7px 16px; border-radius: 5px; }
+QMenu::item:selected { background: #7c3aed; color: #ffffff; }
+QMenu::item:disabled { color: #64748b; }
+QMenu::separator { height: 1px; background: #334155; margin: 4px 8px; }
 QLabel#previewLabel { background: #050a16; border: 1px solid #1e293b; border-radius: 12px; color: #475569; }
 QFrame#divider { background: #1e293b; max-height: 1px; }
 """
 
 
 def make_app_icon() -> QIcon:
-    """程序化生成应用图标（一只橙色眼睛，无外部图片依赖）。"""
+    """程序化生成应用图标（橙色牛头剪影，无外部图片依赖）。"""
+    from PySide6.QtCore import QPointF, QRectF
+    from PySide6.QtGui import QPainterPath
+
     pm = QPixmap(64, 64)
     pm.fill(Qt.GlobalColor.transparent)
     p = QPainter(pm)
     p.setRenderHint(QPainter.RenderHint.Antialiasing)
-    # 眼形底
-    p.setPen(QPen(QColor("#f59e0b"), 5))
-    p.setBrush(QColor("#1e293b"))
-    p.drawEllipse(6, 14, 52, 36)
-    # 瞳孔
+
+    orange = QColor("#f59e0b")
+    dark = QColor("#1e293b")
+
+    # 角（对称弯曲）
     p.setPen(Qt.PenStyle.NoPen)
-    p.setBrush(QColor("#f59e0b"))
-    p.drawEllipse(26, 24, 12, 16)
+    p.setBrush(orange)
+    left_horn = QPainterPath(QPointF(14, 26))
+    left_horn.cubicTo(QPointF(4, 22), QPointF(2, 12), QPointF(8, 6))
+    left_horn.cubicTo(QPointF(10, 12), QPointF(14, 16), QPointF(20, 18))
+    left_horn.closeSubpath()
+    p.drawPath(left_horn)
+    right_horn = QPainterPath(QPointF(50, 26))
+    right_horn.cubicTo(QPointF(60, 22), QPointF(62, 12), QPointF(56, 6))
+    right_horn.cubicTo(QPointF(54, 12), QPointF(50, 16), QPointF(44, 18))
+    right_horn.closeSubpath()
+    p.drawPath(right_horn)
+
+    # 头（椭圆脸）
+    p.setBrush(dark)
+    p.setPen(QPen(orange, 3))
+    p.drawEllipse(QRectF(12, 14, 40, 34))
+
+    # 鼻（下颌突出）
+    p.setBrush(dark)
+    p.drawEllipse(QRectF(20, 36, 24, 16))
+    p.setPen(Qt.PenStyle.NoPen)
+    p.setBrush(dark)
+    p.drawRect(QRectF(20, 36, 24, 6))  # 把上下两个椭圆的接缝填平
+
+    # 鼻孔
+    p.setBrush(orange)
+    p.drawEllipse(QPointF(27, 45), 2.4, 3.2)
+    p.drawEllipse(QPointF(37, 45), 2.4, 3.2)
+
+    # 眼睛
+    p.drawEllipse(QPointF(24, 28), 2.2, 2.6)
+    p.drawEllipse(QPointF(40, 28), 2.2, 2.6)
+
     p.end()
     return QIcon(pm)
 

@@ -39,7 +39,10 @@ class Broadcaster(QObject):
 
     # ---------- 内部 ----------
     def _send_heartbeat(self):
-        self._send(HeartbeatMsg(self._ctx.user, self._ctx.host, self._ctx.role()))
+        self._send(HeartbeatMsg(
+            self._ctx.user, self._ctx.host, self._ctx.role(),
+            sync_port=self._ctx.sync_port(),
+        ))
 
     def _send(self, msg):
         payload = protocol.encode(msg)

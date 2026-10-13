@@ -212,6 +212,14 @@ class Database:
             ).fetchall()
         return [(np.frombuffer(r[0], dtype=np.float32), r[1]) for r in rows]
 
+    def get_face_embedding(self, face_id: int):
+        """按 face_id 返回特征向量（np.ndarray float32），不存在返回 None。"""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT embedding FROM leader_faces WHERE id = ?", (face_id,)
+            ).fetchone()
+        return np.frombuffer(row[0], dtype=np.float32) if row else None
+
     # ---------- 报警记录 ----------
     def add_alert(self, source_user: str, source_host: str, ts: float, snapshot=None, target: str = None) -> int:
         with self._lock:

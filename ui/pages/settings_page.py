@@ -42,12 +42,12 @@ class SettingsPage(Page):
         self._threshold = make_spin(self, 20, 90, round(db.get_float("sim_threshold", config.SIM_THRESHOLD) * 100), decimals=2, step=1)
         self._confirm_window = make_spin(self, 3, 30, db.get_int("confirm_window", config.CONFIRM_WINDOW))
         self._confirm_hits = make_spin(self, 1, 30, db.get_int("confirm_hits", config.CONFIRM_HITS))
-        self._cooldown = make_spin(self, 1, 60, db.get_int("cooldown_seconds", config.COOLDOWN_SECONDS) // 60)
+        self._cooldown = make_spin(self, 10, 1000, db.get_int("cooldown_seconds", config.COOLDOWN_SECONDS))
         form.addRow("摄像头", self._camera)
         form.addRow("相似度阈值（0.2~0.9，越大越严格）", self._threshold)
         form.addRow("确认窗口（帧）", self._confirm_window)
         form.addRow("窗口内命中帧数", self._confirm_hits)
-        form.addRow("报警冷却（分钟）", self._cooldown)
+        form.addRow("报警冷却（秒）", self._cooldown)
         self.body().addWidget(detect_group)
 
         # ---------- 网络 ----------
@@ -181,7 +181,7 @@ class SettingsPage(Page):
         db.set_setting("sim_threshold", self._threshold.value() / 100)
         db.set_setting("confirm_window", window)
         db.set_setting("confirm_hits", hits)
-        db.set_setting("cooldown_seconds", self._cooldown.value() * 60)
+        db.set_setting("cooldown_seconds", self._cooldown.value())
         db.set_setting("sound_file", self._sound_edit.text().strip())
         db.set_setting("udp_port", self._udp_port.value())
         db.set_setting("broadcast_addrs", addrs)

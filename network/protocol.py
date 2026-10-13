@@ -12,13 +12,14 @@ MSG_ALERT = "alert"
 
 
 class HeartbeatMsg:
-    """心跳消息：身份 + 角色声明。"""
+    """心跳消息：身份 + 角色声明 + TCP 同步端口。"""
 
-    def __init__(self, user, host, role, ts=None):
+    def __init__(self, user, host, role, ts=None, sync_port=0):
         self.user = user
         self.host = host
         self.role = role
         self.ts = ts if ts is not None else time.time()
+        self.sync_port = sync_port
 
     def to_dict(self):
         return {
@@ -27,11 +28,15 @@ class HeartbeatMsg:
             "host": self.host,
             "role": self.role,
             "ts": self.ts,
+            "sync_port": self.sync_port,
         }
 
     @staticmethod
     def from_dict(d):
-        return HeartbeatMsg(d.get("user", ""), d.get("host", ""), d.get("role", ""), d.get("ts"))
+        return HeartbeatMsg(
+            d.get("user", ""), d.get("host", ""), d.get("role", ""), d.get("ts"),
+            d.get("sync_port", 0),
+        )
 
 
 class AlertMsg:

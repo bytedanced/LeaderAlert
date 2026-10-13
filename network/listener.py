@@ -8,9 +8,9 @@ from network.protocol import AlertMsg, HeartbeatMsg
 
 
 class ListenerThread(QThread):
-    heartbeat_received = Signal(object)  # HeartbeatMsg
-    alert_received = Signal(object)      # AlertMsg
-    bind_failed = Signal(str)            # 端口绑定失败（如本机多实例未复用）
+    heartbeat_received = Signal(object, tuple)  # HeartbeatMsg, (ip, port)
+    alert_received = Signal(object)             # AlertMsg
+    bind_failed = Signal(str)                   # 端口绑定失败（如本机多实例未复用）
 
     def __init__(self, port, parent=None):
         super().__init__(parent)
@@ -31,14 +31,14 @@ class ListenerThread(QThread):
         sock.settimeout(0.5)
         while not self._stop:
             try:
-                data, _addr = sock.recvfrom(65536)
+                data, addr = sock.recvfrom(65536)
             except socket.timeout:
                 continue
             except OSError:
                 break
             msg = protocol.decode(data)
             if isinstance(msg, HeartbeatMsg):
-                self.heartbeat_received.emit(msg)
+                self.heartbeat_received.emit(msg, addr)
             elif isinstance(msg, AlertMsg):
                 self.alert_received.emit(msg)
         sock.close()
