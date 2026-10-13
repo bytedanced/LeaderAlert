@@ -1,0 +1,19 @@
+{
+  "name": "leader-alert-promo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render src/index.ts Promo out/promo.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.350",
+    "remotion": "4.0.350",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "typescript": "5.5.4",
+    "@types/react": "18.3.3"
+  }
+}
