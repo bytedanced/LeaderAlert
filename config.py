@@ -18,4 +18,4 @@ MOTION_FORCE_INTERVAL = 10.0  # 静止期间强制全量检测的安全间隔（
 MOTION_MIN_PIXELS = 100       # 缩略图帧差判定运动的像素数阈值（80×60 共 4800 像素，约 2%）
 
 APP_NAME = "LeaderAlert"      # 应用名（同时用于注册表自启动项名称）
-APP_VERSION = "0.3.0"         # 版本号（与 pyproject.toml 保持一致）
+APP_VERSION = "0.4.0"         # 版本号（与 pyproject.toml 保持一致）

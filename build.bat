@@ -21,7 +21,8 @@ echo 版本号：%VERSION%
 
 uv sync
 uv run python -m PyInstaller --noconfirm --clean --onefile --windowed --name "LeaderAlert_v%VERSION%" ^
-  --add-data "assets\models;models" main.py
+  --add-data "assets\models;models" ^
+  --add-data "assets\sounds;sounds" main.py
 
 echo.
 echo 打包完成：dist\LeaderAlert_v%VERSION%.exe

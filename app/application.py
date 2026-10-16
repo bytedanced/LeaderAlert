@@ -15,6 +15,7 @@ from detector.recognizer import Recognizer, RecognizerError
 from network.broadcaster import Broadcaster
 from network.listener import ListenerThread
 from network.sync_server import SyncServerThread
+from notify.action import run_action
 from notify.notifier import Notifier
 from storage import paths
 from ui.widgets import make_app_icon
@@ -191,6 +192,7 @@ class AppContext(QObject):
             cv2.imwrite(os.path.join(paths.snapshots_dir(), snapshot), frame)
         self.db.add_alert(user, host, ts, snapshot, target)
         self.notifier.show_alert(user, host, ts, target)
+        run_action(self.db.get_str("alert_action"))
         self.alerts_changed.emit()
 
     # ---------- 识别器 ----------

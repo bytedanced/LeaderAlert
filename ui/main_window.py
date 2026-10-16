@@ -1,4 +1,4 @@
-"""主窗口：左侧导航 + 右侧堆叠页面（仪表盘/在线/报警/牛管理/设置）。"""
+"""主窗口：左侧导航 + 右侧堆叠页面（仪表盘/在线/报警/牛管理/报警动作/设置）。"""
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 import config
+from ui.pages.action_page import ActionPage
 from ui.pages.alerts_page import AlertsPage
 from ui.pages.dashboard import DashboardPage
 from ui.pages.peers_page import PeersPage
@@ -52,12 +53,14 @@ class MainWindow(QMainWindow):
         self._peers = PeersPage(ctx)
         self._alerts = AlertsPage(ctx)
         self._targets = TargetsPage(ctx)
+        self._action = ActionPage(ctx)
         self._settings = SettingsPage(ctx, on_saved=self._on_settings_saved)
         pages = [
             ("仪表盘", self._dashboard),
             ("在线人员", self._peers),
             ("报警历史", self._alerts),
             ("牛管理", self._targets),
+            ("报警动作", self._action),
             ("设置", self._settings),
         ]
         for i, (name, page) in enumerate(pages):

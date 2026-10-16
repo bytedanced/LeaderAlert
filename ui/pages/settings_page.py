@@ -1,12 +1,10 @@
-"""设置页（内嵌）：识别参数、网络、提示音、开机自启。"""
+"""设置页（内嵌）：识别参数、网络、开机自启。"""
 import ipaddress
-import os
 import sys
 
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
-    QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -20,14 +18,13 @@ from PySide6.QtWidgets import (
 
 import config
 from app.application import set_autostart
-from notify.notifier import play_sound
 from ui.pages.base import Page
 from ui.widgets import make_spin
 
 
 class SettingsPage(Page):
     def __init__(self, ctx, on_saved=None, parent=None):
-        super().__init__(ctx, "设置", "识别参数与通知方式，保存后立即生效", parent)
+        super().__init__(ctx, "设置", "识别参数与网络，保存后立即生效", parent)
         self._on_saved = on_saved
         db = ctx.db
 
@@ -96,20 +93,6 @@ class SettingsPage(Page):
         net_layout.addLayout(addr_row)
         self.body().addWidget(net_group)
 
-        # ---------- 提示音 ----------
-        sound_group = QGroupBox("提示音")
-        sound_row = QHBoxLayout(sound_group)
-        self._sound_edit = QLineEdit(db.get_str("sound_file") or "")
-        self._sound_edit.setPlaceholderText("留空使用系统默认提示音（仅支持 .wav）")
-        btn_browse = QPushButton("浏览…")
-        btn_test = QPushButton("试听")
-        btn_browse.clicked.connect(self._pick_sound)
-        btn_test.clicked.connect(lambda: play_sound(self._sound_edit.text().strip() or None))
-        sound_row.addWidget(self._sound_edit, 1)
-        sound_row.addWidget(btn_browse)
-        sound_row.addWidget(btn_test)
-        self.body().addWidget(sound_group)
-
         # ---------- 其他 ----------
         misc_group = QGroupBox("其他")
         misc_layout = QVBoxLayout(misc_group)
@@ -131,11 +114,6 @@ class SettingsPage(Page):
         row.addWidget(btn_save)
         self.body().addLayout(row)
         self.body().addStretch(1)
-
-    def _pick_sound(self):
-        path, _ = QFileDialog.getOpenFileName(self, "选择提示音文件", "", "音频文件 (*.wav)")
-        if path:
-            self._sound_edit.setText(path)
 
     # ---------- 广播地址列表 ----------
     def _add_addr(self):
@@ -187,7 +165,6 @@ class SettingsPage(Page):
         db.set_setting("confirm_hits", hits)
         db.set_setting("camera_fps", self._camera_fps.value())
         db.set_setting("cooldown_seconds", self._cooldown.value())
-        db.set_setting("sound_file", self._sound_edit.text().strip())
         db.set_setting("udp_port", self._udp_port.value())
         db.set_setting("broadcast_addrs", addrs)
         db.set_setting("heartbeat_interval", self._heartbeat.value())
